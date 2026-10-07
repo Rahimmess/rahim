@@ -16,7 +16,7 @@ end
 
 desc 'Build the demo building headlessly and write preview/ + CSVs'
 task :demo do
-  sh 'ruby tools/demo.rb'
+  sh 'tools/demo'
 end
 
 desc 'Package dist/openwalls-<version>.rbz'
@@ -26,7 +26,7 @@ end
 
 desc 'Serve the 3D preview on http://localhost:8080'
 task :preview do
-  sh 'ruby tools/demo.rb && python3 -m http.server 8080 --directory preview'
+  sh 'tools/demo && python3 -m http.server 8080 --directory preview'
 end
 
 task default: %i[syntax test]

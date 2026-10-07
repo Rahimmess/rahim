@@ -1,0 +1,11 @@
+{
+  "name": "openwalls-wasm-ruby",
+  "private": true,
+  "version": "1.0.0",
+  "description": "CRuby 3.3 on wasm32-wasi, so this repo can be developed and tested on a machine with no Ruby installed.",
+  "type": "module",
+  "dependencies": {
+    "@ruby/3.3-wasm-wasi": "^2.7.1",
+    "@ruby/wasm-wasi": "^2.7.1"
+  }
+}

@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Fetches a Ruby interpreter for machines that have none.
+#
+# If you already have ruby on PATH you do not need this -- tools/ruby,
+# tools/test and tools/syntax will use it. This exists because OpenWalls was
+# written in a sandbox with no Ruby and no way to install one, and because
+# "clone it and the tests run" is worth more than a line in the README saying
+# which version to install.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+if command -v ruby >/dev/null 2>&1; then
+  echo "  ruby $(ruby -e 'print RUBY_VERSION') is already on PATH -- nothing to do."
+  echo "  Run: ruby test/run.rb"
+  exit 0
+fi
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "  Needs either ruby or node. Install one of them." >&2
+  exit 1
+fi
+
+echo "  No ruby found. Fetching CRuby 3.3 compiled to WebAssembly (~36 MB)..."
+npm install --prefix tools/wasm-ruby --no-audit --no-fund --loglevel=error
+
+echo "  Checking it works..."
+./tools/ruby -e 'puts "  ruby #{RUBY_VERSION} on #{RUBY_PLATFORM}"'
+echo
+echo "  Ready. Try:  ./tools/test"

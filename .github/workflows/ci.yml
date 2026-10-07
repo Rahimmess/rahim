@@ -38,7 +38,7 @@ jobs:
           ruby-version: '3.2'
 
       - name: Build the demo building without SketchUp
-        run: ruby tools/demo.rb
+        run: tools/demo
 
       - name: Package the .rbz
         run: tools/build

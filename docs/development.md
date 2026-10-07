@@ -1,11 +1,12 @@
 # Development
 
 ```console
+tools/bootstrap       # one-off: fetch a Ruby if you have none
 tools/test            # run the suite
 tools/test openings   # run matching groups only
 tools/syntax          # parse every Ruby file, SketchUp adapter included
 tools/ruby FILE.rb    # run any script
-tools/demo.rb         # build the demo building headlessly
+tools/demo            # build the demo building headlessly
 tools/build           # package dist/openwalls-<version>.rbz
 ```
 
@@ -18,6 +19,16 @@ This project was written in a sandbox with no Ruby interpreter and no way to
 install one — no root, no package manager, no access to `cache.ruby-lang.org`.
 `tools/ruby` exists for that situation: it runs the official CRuby 3.3
 `ruby.wasm` build on Node's WASI.
+
+```console
+$ tools/bootstrap
+  No ruby found. Fetching CRuby 3.3 compiled to WebAssembly (~36 MB)...
+  ruby 3.3.3 on wasm32-wasi
+  Ready. Try:  ./tools/test
+```
+
+The runner itself is `tools/wasm-ruby/rubyw.mjs`, checked in and about 200
+lines; `tools/bootstrap` only downloads the interpreter next to it.
 
 It is good enough to develop the whole geometry engine against, and it is why
 the engine has no gem dependencies at all — not even for tests or CSV. The

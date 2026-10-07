@@ -8,7 +8,8 @@ Free, MIT licensed, no licence server, no account, works offline. Supports
 SketchUp 2021 and newer.
 
 ```
-./tools/ruby tools/demo.rb      # builds a whole building, no SketchUp needed
+./tools/bootstrap               # only if you have no ruby -- fetches one
+./tools/demo                    # builds a whole building, no SketchUp needed
 ./tools/test                    # 120 tests against closed-form geometry
 ./tools/build                   # dist/openwalls-0.1.0.rbz
 ```
@@ -67,7 +68,7 @@ does is turn meshes into groups and faces and JSON into attributes.
 That is why this repository can do something most SketchUp extensions cannot:
 
 ```console
-$ ./tools/ruby tools/demo.rb
+$ ./tools/demo
 
   OpenWalls demo building
   --------------------------------------------------------------
@@ -84,8 +85,8 @@ $ ./tools/ruby tools/demo.rb
 
 A complete building — cavity walls, two gables, an arched window, a porthole,
 a curved garden wall, ten openings — generated, measured and exported to OBJ,
-JSON and CSV with no modeller running. `preview/index.html` renders the result
-in a browser.
+JSON and CSV with no modeller running. Serve `preview/` over HTTP
+(`rake preview`) and a browser renders the result in 3D, layer by layer.
 
 ### 2. Openings are ribbons, not booleans
 
@@ -166,10 +167,11 @@ src/openwalls/core/        the engine -- pure Ruby, zero SketchUp API
 src/openwalls/sketchup/    the adapter -- the only code that imports SketchUp
 src/openwalls/ui/          HtmlDialog panel
 test/                      120 tests, hand-rolled harness, no gems
-tools/ruby                 CRuby 3.3 on ruby.wasm, for sandboxes with no ruby
+tools/bootstrap            fetches a Ruby if the machine has none
+tools/ruby                 native ruby, else CRuby 3.3 on ruby.wasm
 tools/test                 test runner
 tools/syntax               parse-checks the adapter too
-tools/demo.rb              builds a building headlessly
+tools/demo                 builds a building headlessly
 tools/build                packages the .rbz
 preview/                   browser viewer for the headless output
 docs/                      architecture, wall types, comparison, development

@@ -13,3 +13,7 @@
 *.swp
 /preview/takeoff-*.csv
 test/.shard.rb
+
+# Fetched by tools/bootstrap
+/tools/wasm-ruby/node_modules/
+/tools/wasm-ruby/package-lock.json
