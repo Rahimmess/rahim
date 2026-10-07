@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Thin wrapper so the repo can be developed where no native ruby exists.
+# Prefers a real ruby; falls back to the bundled ruby.wasm runner.
+set -euo pipefail
+if command -v ruby >/dev/null 2>&1; then exec ruby "$@"; fi
+RUNNER="${RUBYW:-$HOME/.toolchain/rubyw.mjs}"
+if [ ! -f "$RUNNER" ]; then
+  echo "No ruby found and no rubyw runner at $RUNNER" >&2; exit 127
+fi
+exec node "$RUNNER" "$@" 2> >(grep -v 'ExperimentalWarning: WASI' | grep -v 'trace-warnings' >&2)
