@@ -1,0 +1,22 @@
+# Build output. dist/ is the scratch output of tools/build; release/ holds
+# the published archive, which is committed on purpose so the extension can
+# be downloaded straight from the repository.
+/build/
+/dist/
+*.rbz
+!/release/*.rbz
+
+# Demo / preview artefacts
+/preview/model.json
+/preview/*.obj
+/tmp/
+
+# Editor noise
+.DS_Store
+*.swp
+/preview/takeoff-*.csv
+test/.shard.rb
+
+# Fetched by tools/bootstrap
+/tools/wasm-ruby/node_modules/
+/tools/wasm-ruby/package-lock.json

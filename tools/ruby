@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Runs a Ruby script with whatever interpreter is available.
+#
+# Prefers a real ruby. Falls back to the ruby.wasm runner in tools/wasm-ruby,
+# which tools/bootstrap installs -- that is what lets this repository be
+# developed, tested and demoed on a machine with no Ruby at all.
+set -euo pipefail
+
+if command -v ruby >/dev/null 2>&1; then exec ruby "$@"; fi
+
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+RUNNER="${RUBYW:-$REPO/tools/wasm-ruby/rubyw.mjs}"
+if [ ! -f "$RUNNER" ]; then
+  echo "No ruby on PATH and no wasm runner at $RUNNER" >&2
+  echo "Run tools/bootstrap to fetch one." >&2
+  exit 127
+fi
+
+exec node "$RUNNER" "$@" 2> >(grep -v 'ExperimentalWarning: WASI' | grep -v 'trace-warnings' >&2)

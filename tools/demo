@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+"""Build the demo building headlessly and write preview/ + the CSV takeoff.
+
+Just a retrying wrapper around `tools/ruby tools/demo.rb`. With a native ruby
+there is nothing to retry; under the ruby.wasm fallback the interpreter
+segfaults at random (see docs/development.md), and a crash of the host VM is
+not a result worth reporting to the user.
+"""
+import os
+import shutil
+import subprocess
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RETRIES = 1 if shutil.which("ruby") else 16
+SEGFAULT = -11
+
+for attempt in range(RETRIES):
+    proc = subprocess.run([os.path.join(ROOT, "tools", "ruby"), "tools/demo.rb"] + sys.argv[1:],
+                          cwd=ROOT)
+    if proc.returncode != SEGFAULT:
+        sys.exit(proc.returncode)
+    print(f"  host interpreter crashed, retrying ({attempt + 1}/{RETRIES})", file=sys.stderr)
+
+print("  the ruby.wasm interpreter crashed on every attempt", file=sys.stderr)
+sys.exit(1)

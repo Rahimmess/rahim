@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  test:
+    name: Ruby ${{ matrix.ruby }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 2.7 is SketchUp 2021-2022, 3.2 is SketchUp 2024+. The geometry core
+        # has to parse and pass on both, because the extension supports both.
+        ruby: ['2.7', '3.2', '3.3']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+
+      - name: Parse every Ruby file, adapter included
+        run: tools/syntax
+
+      - name: Run the geometry test suite
+        run: ruby test/run.rb
+
+  demo:
+    name: Headless build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+
+      - name: Build the demo building without SketchUp
+        run: tools/demo
+
+      - name: Package the .rbz
+        run: tools/build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openwalls-rbz
+          path: dist/*.rbz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demo-model
+          path: |
+            preview/model.obj
+            preview/takeoff-*.csv
