@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+"""Parse-check every Ruby file in the repository.
+
+Most of src/openwalls/sketchup/ cannot be *run* outside SketchUp, but it can
+always be parsed, and a typo there would otherwise only surface on someone
+else's machine. With a native ruby this is one process; under the ruby.wasm
+fallback the files are checked in small batches, because that interpreter
+segfaults at random once a process has allocated enough.
+"""
+import os
+import shutil
+import subprocess
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BATCH = 5
+RETRIES = 8
+SEGFAULT = -11
+
+
+def ruby_files():
+    found = []
+    for folder in ("src", "test", "tools"):
+        for base, dirs, files in os.walk(os.path.join(ROOT, folder)):
+            dirs[:] = sorted(d for d in dirs if not d.startswith("."))
+            found += [os.path.join(base, f) for f in sorted(files) if f.endswith(".rb")]
+    return sorted(found)
+
+
+def run(command, paths):
+    for _ in range(RETRIES):
+        proc = subprocess.run(command + [os.path.join(ROOT, "tools", "syntax.rb")] + paths,
+                              cwd=ROOT, capture_output=True, text=True)
+        if proc.returncode != SEGFAULT:
+            return proc
+    return None
+
+
+def main():
+    files = ruby_files()
+    native = shutil.which("ruby")
+    command = [native] if native else [os.path.join(ROOT, "tools", "ruby")]
+    batches = [files] if native else [files[i:i + BATCH] for i in range(0, len(files), BATCH)]
+
+    failures = 0
+    for batch in batches:
+        proc = run(command, batch)
+        if proc is None:
+            print(f"  !! host interpreter crashed on {', '.join(os.path.basename(p) for p in batch)}")
+            failures += 1
+            continue
+        for line in (proc.stdout + proc.stderr).splitlines():
+            if "FAIL" in line or "failed to parse" in line or line.strip().startswith("#"):
+                print(line)
+                failures += 1
+
+    print(f"\n  {len(files)} Ruby files checked, {failures} problem(s)\n")
+    return 1 if failures else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenWalls &mdash; headless geometry preview</title>
+<style>
+  :root { --bg:#11131a; --panel:#1a1e27; --line:#2b3240; --text:#e7eaf0; --muted:#8c95a8; --accent:#4c9aff; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--text);
+    font:13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow:hidden; }
+  #stage { position:absolute; inset:0; }
+  .hud { position:absolute; z-index:5; background:rgba(26,30,39,.92); border:1px solid var(--line);
+    border-radius:10px; backdrop-filter:blur(8px); }
+  #head { top:14px; left:14px; padding:12px 16px; max-width:380px; }
+  #head h1 { margin:0 0 2px; font-size:15px; letter-spacing:.2px; }
+  #head p { margin:0; color:var(--muted); font-size:11.5px; }
+  #stats { margin-top:9px; display:flex; gap:14px; flex-wrap:wrap; }
+  #stats b { display:block; font-size:15px; font-weight:600; }
+  #stats span { color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:.06em; }
+  #side { top:14px; right:14px; width:260px; max-height:calc(100% - 28px); overflow:auto; padding:12px 14px; }
+  #side h2 { font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted);
+    margin:4px 0 8px; font-weight:600; }
+  #side h2:not(:first-child) { margin-top:18px; }
+  label.row { display:flex; align-items:center; gap:8px; padding:3px 0; cursor:pointer; }
+  label.row .sw { width:11px; height:11px; border-radius:3px; flex:none; }
+  label.row .nm { flex:1; }
+  label.row .vl { color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; }
+  input[type=checkbox] { accent-color:var(--accent); }
+  #foot { bottom:14px; left:14px; padding:9px 14px; color:var(--muted); font-size:11.5px; }
+  #foot kbd { background:#262c38; border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:10.5px; }
+  .pill { display:inline-block; padding:1px 7px; border-radius:99px; font-size:10.5px; font-weight:600; }
+  .ok { background:rgba(80,200,120,.16); color:#64d29a; }
+  .bad { background:rgba(230,90,90,.16); color:#e88; }
+  #err { position:absolute; inset:0; display:none; place-items:center; text-align:center; padding:40px; }
+  #err div { max-width:460px; color:var(--muted); }
+  #err code { color:var(--text); background:#1a1e27; padding:2px 6px; border-radius:4px; }
+  button.flat { background:#262c38; border:1px solid var(--line); color:var(--text); border-radius:6px;
+    padding:5px 9px; cursor:pointer; font:inherit; font-size:11.5px; }
+  button.flat:hover { border-color:var(--accent); }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<div id="head" class="hud">
+  <h1>OpenWalls geometry core</h1>
+  <p>Built by pure Ruby with no SketchUp running. Same code, same output.</p>
+  <div id="stats"></div>
+</div>
+
+<div id="side" class="hud">
+  <h2>Construction layers</h2>
+  <div id="kinds"></div>
+  <h2>Walls</h2>
+  <div id="walls"></div>
+  <h2>View</h2>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <button class="flat" id="toggle-edges">Edges</button>
+    <button class="flat" id="toggle-explode">Explode</button>
+    <button class="flat" id="reset-view">Reset</button>
+  </div>
+</div>
+
+<div id="foot" class="hud">
+  <kbd>drag</kbd> orbit &nbsp; <kbd>right-drag</kbd> pan &nbsp; <kbd>wheel</kbd> zoom
+</div>
+
+<div id="err"><div>
+  <h2>No model yet</h2>
+  <p>Generate one first:</p>
+  <p><code>./tools/ruby tools/demo.rb</code></p>
+  <p id="err-detail"></p>
+</div></div>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module" src="viewer.js"></script>
+</body>
+</html>

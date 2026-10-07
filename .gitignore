@@ -11,3 +11,5 @@
 # Editor noise
 .DS_Store
 *.swp
+/preview/takeoff-*.csv
+test/.shard.rb

@@ -115,17 +115,26 @@ module OpenWalls
           out << "#{op.name} #{op.id} runs past the end of the wall" if op.end_station > len + 1e-6
           head = op.head_height
           min_top = [height_at((op.start_station / len).clamp(0, 1)), height_at((op.end_station / len).clamp(0, 1))].min
-          out << "#{op.name} #{op.id} is taller than the wall above it" if head > min_top - 1e-6
+          # An opening whose head reaches the wall top exactly is fine -- it
+          # just splits the wall into two piers, which is a real detail.
+          out << "#{op.name} #{op.id} is taller than the wall above it" if head > min_top + 1e-6
         end
         overlaps.each { |(a, b)| out << "#{a.name} #{a.id} overlaps #{b.name} #{b.id}" }
         out
       end
 
+      # Two openings clash only when they overlap horizontally *and*
+      # vertically. A fanlight directly above a door shares its whole span
+      # and is perfectly legal, so a purely horizontal test would cry wolf on
+      # one of the most ordinary details there is.
       def overlaps
         sorted = @openings.sort_by(&:start_station)
         out = []
-        sorted.each_cons(2) do |a, b|
-          out << [a, b] if b.start_station < a.end_station - 1e-6
+        sorted.combination(2) do |a, b|
+          next unless b.start_station < a.end_station - 1e-6 && a.start_station < b.end_station - 1e-6
+          next unless b.sill < a.head_height - 1e-6 && a.sill < b.head_height - 1e-6
+
+          out << [a, b]
         end
         out
       end

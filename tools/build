@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""Package the extension as an installable .rbz.
+
+An .rbz is a zip with a different extension. SketchUp expects the registrar
+script and a same-named folder at the archive root, so the contents of src/
+map straight onto it:
+
+    openwalls.rb
+    openwalls/
+      main.rb, version.rb, VERSION
+      core/...        <- pure Ruby, no SketchUp API anywhere
+      sketchup/...    <- the only code that touches the SketchUp API
+      ui/...
+
+The archive deliberately contains no tests, no toolchain and no demo: those
+belong to the repository, not to the thing you install.
+
+    tools/build            -> dist/openwalls-<version>.rbz
+    tools/build --out DIR
+"""
+import argparse
+import os
+import sys
+import zipfile
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SRC = os.path.join(ROOT, "src")
+
+SKIP_DIRS = {"__pycache__", ".git"}
+SKIP_SUFFIX = (".pyc", ".orig", ".rej", "~")
+SKIP_NAMES = {".DS_Store"}
+
+
+def collect():
+    for base, dirs, files in os.walk(SRC):
+        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
+        for name in sorted(files):
+            if name in SKIP_NAMES or name.endswith(SKIP_SUFFIX):
+                continue
+            absolute = os.path.join(base, name)
+            yield absolute, os.path.relpath(absolute, SRC)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--out", default=os.path.join(ROOT, "dist"))
+    args = parser.parse_args()
+
+    with open(os.path.join(SRC, "openwalls", "VERSION"), encoding="utf-8") as handle:
+        version = handle.read().strip()
+
+    entries = list(collect())
+    if not any(rel == "openwalls.rb" for _, rel in entries):
+        print("src/openwalls.rb is missing -- SketchUp needs it at the archive root",
+              file=sys.stderr)
+        return 1
+
+    # A .rbz that quietly ships SketchUp-API calls in the engine would make
+    # the headless tests a lie, so the build refuses to produce one.
+    leaks = []
+    for absolute, rel in entries:
+        if not rel.startswith(os.path.join("openwalls", "core")) or not rel.endswith(".rb"):
+            continue
+        with open(absolute, encoding="utf-8") as handle:
+            for number, line in enumerate(handle, 1):
+                code = line.split("#", 1)[0]
+                if "Sketchup" in code or "Geom::" in code or "UI." in code:
+                    leaks.append(f"{rel}:{number}: {line.strip()}")
+    if leaks:
+        print("the geometry core must not reference the SketchUp API:", file=sys.stderr)
+        for leak in leaks:
+            print("  " + leak, file=sys.stderr)
+        return 1
+
+    os.makedirs(args.out, exist_ok=True)
+    target = os.path.join(args.out, f"openwalls-{version}.rbz")
+
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+        for absolute, rel in entries:
+            archive.write(absolute, rel.replace(os.sep, "/"))
+
+    size = os.path.getsize(target)
+    print(f"  {os.path.relpath(target, ROOT)}  ({len(entries)} files, {size / 1024:.1f} kB)")
+    print("  Install with Extension Manager > Install Extension.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

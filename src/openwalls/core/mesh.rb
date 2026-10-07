@@ -195,6 +195,40 @@ module OpenWalls
         [lo, hi]
       end
 
+      # Flat [x, y, z, ...] triangle soup for a GPU buffer. Faces are fanned,
+      # which is safe here because the mesher only emits convex polygons.
+      def triangle_positions
+        out = []
+        @faces.each do |face|
+          indices = face.indices
+          (1...indices.size - 1).each do |i|
+            [indices[0], indices[i], indices[i + 1]].each { |index| out.concat(@vertices[index]) }
+          end
+        end
+        out
+      end
+
+      # Flat [x, y, z, ...] line soup of the *polygon* edges, skipping the
+      # diagonals a triangulation would add. This is what makes a preview look
+      # like architecture rather than a finite element mesh.
+      def edge_positions
+        seen = {}
+        out = []
+        @faces.each do |face|
+          indices = face.indices
+          indices.each_with_index do |a, i|
+            b = indices[(i + 1) % indices.size]
+            key = a < b ? [a, b] : [b, a]
+            next if seen[key]
+
+            seen[key] = true
+            out.concat(@vertices[a])
+            out.concat(@vertices[b])
+          end
+        end
+        out
+      end
+
       def to_obj(name = 'wall')
         lines = ["# OpenWalls export -- units: millimetres", "o #{name}"]
         @vertices.each { |v| lines << format('v %.4f %.4f %.4f', v[0], v[1], v[2]) }

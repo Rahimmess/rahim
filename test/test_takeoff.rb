@@ -20,6 +20,15 @@ group 'Takeoff' do
                  block['Net volume (m3)'], 1e-6
   end
 
+  test 'a fanlight above a door is not reported as a clash' do
+    rec = straight_wall(length: 5000, height: 3000, openings: [
+                          door(id: 'd', station: 2000, width: 1000, height: 2100),
+                          window(id: 'f', station: 2000, width: 1000, height: 400, sill: 2200)
+                        ])
+    assert_empty rec.overlaps
+    assert_empty rec.warnings
+  end
+
   test 'materials are pooled across walls' do
     walls = [
       straight_wall(id: 'w1', length: 4000, height: 2700),

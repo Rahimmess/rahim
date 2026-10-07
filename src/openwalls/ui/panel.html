@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenWalls</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header class="bar">
+  <div class="brand">OpenWalls <span id="version" class="muted"></span></div>
+  <nav class="tabs">
+    <button class="tab is-active" data-tab="draw">Draw</button>
+    <button class="tab" data-tab="wall">Wall</button>
+    <button class="tab" data-tab="type">Build-up</button>
+    <button class="tab" data-tab="takeoff">Quantities</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ------------------------------------------------------------ Draw -->
+  <section class="panel is-active" data-panel="draw">
+    <div class="tools">
+      <button class="tool" data-tool="wall"><span class="glyph">▭</span>Wall</button>
+      <button class="tool" data-tool="door"><span class="glyph">🚪</span>Door</button>
+      <button class="tool" data-tool="window"><span class="glyph">◫</span>Window</button>
+      <button class="tool" data-tool="window" data-shape="round"><span class="glyph">◠</span>Arched</button>
+      <button class="tool" data-tool="window" data-shape="circle"><span class="glyph">◯</span>Porthole</button>
+      <button class="tool" data-tool="opening"><span class="glyph">▢</span>Opening</button>
+    </div>
+
+    <h2>Defaults for new walls</h2>
+    <div class="field">
+      <label for="d-type">Wall type</label>
+      <select id="d-type" data-default="type_id"></select>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="d-height">Height</label>
+        <input id="d-height" type="number" step="10" data-default="height">
+      </div>
+      <div class="field">
+        <label for="d-base">Base level</label>
+        <input id="d-base" type="number" step="10" data-default="base_z">
+      </div>
+    </div>
+    <div class="field">
+      <label for="d-just">Justification</label>
+      <select id="d-just" data-default="justification">
+        <option value="face_a">Face A (exterior) on the path</option>
+        <option value="center">Centre on the path</option>
+        <option value="face_b">Face B (interior) on the path</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="d-tol">Curve tolerance <span class="muted">mm sagitta</span></label>
+      <input id="d-tol" type="number" step="0.1" min="0.05" data-default="tolerance">
+      <p class="hint">Arcs are stored as centre, radius and sweep. Lower this
+        and every curve in the model gets smoother on the next rebuild &mdash;
+        the facets were never the truth.</p>
+    </div>
+    <p class="status" id="model-status"></p>
+  </section>
+
+  <!-- ------------------------------------------------------------ Wall -->
+  <section class="panel" data-panel="wall">
+    <p class="empty" id="wall-empty">Select one or more walls.</p>
+
+    <div id="wall-form" hidden>
+      <p class="status" id="wall-status"></p>
+
+      <div class="field">
+        <label for="w-name">Name</label>
+        <input id="w-name" type="text" data-patch="name">
+      </div>
+      <div class="field">
+        <label for="w-type">Wall type</label>
+        <select id="w-type" data-patch="type_id"></select>
+      </div>
+      <div class="field">
+        <label for="w-just">Justification</label>
+        <select id="w-just" data-patch="justification">
+          <option value="face_a">Face A on the path</option>
+          <option value="center">Centre on the path</option>
+          <option value="face_b">Face B on the path</option>
+        </select>
+      </div>
+
+      <h2>Top profile</h2>
+      <div class="grid-3">
+        <div class="field">
+          <label for="w-hs">Start</label>
+          <input id="w-hs" type="number" step="10" data-patch="height_start">
+        </div>
+        <div class="field">
+          <label for="w-hm">Mid <span class="muted">gable</span></label>
+          <input id="w-hm" type="number" step="10" data-patch="height_mid" placeholder="none">
+        </div>
+        <div class="field">
+          <label for="w-he">End</label>
+          <input id="w-he" type="number" step="10" data-patch="height_end">
+        </div>
+      </div>
+      <svg id="profile" class="profile" viewBox="0 0 300 90" preserveAspectRatio="none"></svg>
+      <p class="hint">Leave Mid empty for a flat or straight-sloping top. Fill
+        it in and the same wall becomes a gable or an asymmetric pitch &mdash;
+        no splitting required.</p>
+
+      <div class="field">
+        <label for="w-base">Base level</label>
+        <input id="w-base" type="number" step="10" data-patch="base_z">
+      </div>
+
+      <h2>Openings <span class="muted" id="op-count"></span></h2>
+      <div id="openings"></div>
+
+      <div class="actions">
+        <button id="apply" class="primary">Apply to selection</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- --------------------------------------------------------- Build-up -->
+  <section class="panel" data-panel="type">
+    <div class="field">
+      <label for="t-pick">Edit type</label>
+      <select id="t-pick"></select>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="t-name">Name</label>
+        <input id="t-name" type="text">
+      </div>
+      <div class="field">
+        <label for="t-id">Id</label>
+        <input id="t-id" type="text">
+      </div>
+    </div>
+
+    <div class="stackwrap">
+      <div id="stack" class="stack"></div>
+      <div class="stacklabels"><span>Face A &mdash; exterior</span><span id="t-total"></span><span>Face B</span></div>
+    </div>
+
+    <div id="layers"></div>
+    <div class="actions">
+      <button id="add-layer">Add layer</button>
+      <button id="save-type" class="primary">Save to model</button>
+    </div>
+    <p class="hint">A wall is a layer stack, and nothing else. A partition is
+      one layer; a cavity wall is five. There is no separate &ldquo;double
+      wall&rdquo; mode to learn, and adding insulation is adding a layer.
+      Types are saved inside this .skp &mdash; they travel with the file.</p>
+  </section>
+
+  <!-- -------------------------------------------------------- Quantities -->
+  <section class="panel" data-panel="takeoff">
+    <div class="actions">
+      <button id="refresh-takeoff">Recalculate</button>
+      <button id="export-takeoff" class="primary">Export CSV</button>
+    </div>
+    <p class="hint">Quantities are measured off the solids that were actually
+      built, so an opening deduction cannot drift out of step with the model.</p>
+    <div id="sheets"></div>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

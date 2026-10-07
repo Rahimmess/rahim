@@ -55,11 +55,11 @@ module OpenWalls
             layer = entry[:layer]
             key = layer.material || layer.name
             bucket = acc[key]
-            if layer.measure == :volume
-              bucket[:volume] += entry[:mesh].volume
-            else
-              bucket[:area] += entry[:mesh].area(:face_a)
-            end
+            bucket[:volume] += entry[:mesh].volume if layer.measure == :volume
+            # Elevational area as well as volume: bricks and boards are
+            # ordered by the square metre, concrete by the cubic metre, and
+            # the sheet should answer both without a second export.
+            bucket[:area] += entry[:mesh].area(:face_a)
             bucket[:walls][res.record.id] = true
           end
         end
@@ -68,7 +68,7 @@ module OpenWalls
           {
             'Material' => material,
             'Net volume (m3)' => r3(Units.mm3_to_m3(data[:volume])),
-            'Area (m2)' => r3(Units.mm2_to_m2(data[:area])),
+            'Face area (m2)' => r3(Units.mm2_to_m2(data[:area])),
             'Walls' => data[:walls].size
           }
         end.sort_by { |row| -row['Net volume (m3)'] }

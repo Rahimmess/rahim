@@ -146,6 +146,28 @@ module OpenWalls
         end
       end
 
+      # Nearest point on the centreline to +point+, as
+      # [arc_length, distance]. This is how the opening tool turns a cursor
+      # position into a station, and how snapping finds the wall under the
+      # mouse.
+      def project(point)
+        best_s = 0.0
+        best_d = Float::INFINITY
+        (0...count - 1).each do |i|
+          a = @points[i]
+          b = @points[i + 1]
+          ab = b - a
+          len2 = ab.length2
+          t = len2 < Vec2::EPS * Vec2::EPS ? 0.0 : ((point - a).dot(ab) / len2).clamp(0.0, 1.0)
+          distance = a.lerp(b, t).distance_to(point)
+          next unless distance < best_d
+
+          best_d = distance
+          best_s = @arc_lengths[i] + (t * (@arc_lengths[i + 1] - @arc_lengths[i]))
+        end
+        [best_s, best_d]
+      end
+
       # A contiguous slice [from_index..to_index] as its own Stations object
       # that still reads its rails from this one, so a wall split out of a
       # mitered chain keeps the chain's corner points as its end caps.

@@ -178,6 +178,41 @@ group 'Offset' do
   end
 end
 
+group 'Stations' do
+  test 'splits land exactly on the requested arc lengths' do
+    st = OW::Stations.build([v(0, 0), v(1000, 0), v(1000, 1000)], splits: [500, 1200])
+    assert_close 500.0, st.arc_lengths[st.index_at(500)], 1e-9
+    assert_close 1200.0, st.arc_lengths[st.index_at(1200)], 1e-9
+    assert_close 2000.0, st.total_length, 1e-9
+  end
+
+  test 'splits outside the run are ignored rather than corrupting the spine' do
+    st = OW::Stations.build([v(0, 0), v(1000, 0)], splits: [-50, 0, 1000, 5000])
+    assert_equal 2, st.count
+  end
+
+  test 'a slice keeps the parent rails, which is what preserves a miter' do
+    parent = OW::Stations.build([v(0, 0), v(1000, 0), v(1000, 1000)])
+    corner = parent.rail(-100)[1]
+    piece = parent.slice(0, 1)
+    assert_equal corner, piece.rail(-100).last,
+                 'the slice must end on the chain corner, not a fresh perpendicular cap'
+  end
+
+  test 'projecting a point finds its station on the centreline' do
+    st = OW::Stations.build([v(0, 0), v(4000, 0)])
+    s, d = st.project(v(1500, 250))
+    assert_close 1500.0, s, 1e-9
+    assert_close 250.0, d, 1e-9
+  end
+
+  test 'projection clamps to the ends of the run' do
+    st = OW::Stations.build([v(0, 0), v(4000, 0)])
+    assert_close 0.0, st.project(v(-800, 0))[0], 1e-9
+    assert_close 4000.0, st.project(v(9000, 0))[0], 1e-9
+  end
+end
+
 group 'Mesh' do
   test 'a hand-built cube is closed and has the right volume' do
     m = OW::Mesh.new
