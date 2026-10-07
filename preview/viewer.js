@@ -28,6 +28,8 @@ sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 const d = 14000;
 Object.assign(sun.shadow.camera, { left: -d, right: d, top: d, bottom: -d, near: 100, far: 60000 });
+sun.shadow.camera.updateProjectionMatrix();
+sun.shadow.bias = -0.0008;
 scene.add(sun);
 
 const ground = new THREE.Mesh(
