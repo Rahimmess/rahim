@@ -26,9 +26,11 @@ What lives where:
 | `core/wall_type.rb` | the layer stack |
 | `core/opening_record.rb` | an opening as a profile function |
 | `core/wall_record.rb` | the full editable spec sheet, JSON schema v1 |
-| `core/wall_builder.rb` | the ribbon mesher |
+| `core/framing.rb` | wall-local member plans, regional standards, cutting lists and framing meshes |
+| `core/wall_builder.rb` | the ribbon mesher and coordination of solid/framed layers |
 | `core/chain.rb` | cross-wall auto-mitering |
-| `core/takeoff.rb` | quantities and CSV |
+| `core/takeoff.rb` | quantities, framing summaries and CSV |
+| `startup.rb` | guarded, idempotent extension bootstrapping |
 
 ## Stations and rails
 

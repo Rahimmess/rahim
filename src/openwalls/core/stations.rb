@@ -168,6 +168,21 @@ module OpenWalls
         [best_s, best_d]
       end
 
+      # Point on the offset rail at an arbitrary centreline arc length. This
+      # lets framing pieces start/end between tessellation stations instead of
+      # snapping their cuts to the nearest facet.
+      def point_on_rail(distance, arc_length)
+        line = rail(distance)
+        return line.first if arc_length <= @arc_lengths.first
+        return line.last if arc_length >= @arc_lengths.last
+
+        index = 0
+        index += 1 while index < count - 2 && @arc_lengths[index + 1] < arc_length
+        span = @arc_lengths[index + 1] - @arc_lengths[index]
+        fraction = span < 1e-9 ? 0.0 : (arc_length - @arc_lengths[index]) / span
+        line[index].lerp(line[index + 1], fraction)
+      end
+
       # A contiguous slice [from_index..to_index] as its own Stations object
       # that still reads its rails from this one, so a wall split out of a
       # mitered chain keeps the chain's corner points as its end caps.

@@ -11,7 +11,9 @@ require_relative 'test_core_math'
 require_relative 'test_records'
 require_relative 'test_wall_builder'
 require_relative 'test_chain'
+require_relative 'test_framing'
 require_relative 'test_takeoff'
+require_relative 'test_boot'
 
 filter = ARGV.find { |a| !a.start_with?('-') }
 TinyTest.say "\nOpenWalls test suite#{filter ? " (filter: #{filter})" : ''}"

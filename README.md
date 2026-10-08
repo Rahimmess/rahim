@@ -10,8 +10,8 @@ SketchUp 2021 and newer.
 ```
 ./tools/bootstrap               # only if you have no ruby -- fetches one
 ./tools/demo                    # builds a whole building, no SketchUp needed
-./tools/test                    # 120 tests against closed-form geometry
-./tools/build                   # dist/openwalls-0.1.0.rbz
+./tools/test                    # 138 tests against closed-form geometry
+./tools/build                   # dist/openwalls-0.1.1.rbz
 ```
 
 ---
@@ -35,10 +35,11 @@ WallType.new(id: 'cavity-300', name: 'Cavity 300', layers: [
 ```
 
 A partition is a one-layer stack. A cavity wall is a five-layer stack. Adding
-insulation is adding a layer, not switching mode. Every layer becomes its own
-closed solid, its own selectable group, its own line in the takeoff — and the
-same structure is what IFC calls an `IfcMaterialLayerSet`, so it is the right
-shape for export later rather than a convenient fiction now.
+insulation is adding a layer, not switching mode. Each solid layer becomes its
+own closed solid; cavities and membranes preserve spacing without fake
+geometry; a framed structural layer becomes individually selectable members
+and a cut list. The same stack is what IFC calls an `IfcMaterialLayerSet`, so
+it is the right shape for export later rather than a convenient fiction now.
 
 ## What it does
 
@@ -49,8 +50,9 @@ shape for export later rather than a convenient fiction now.
 | **Corners** | Walls that meet end-to-start with a compatible stack are mitered automatically. Walls with different stacks butt cleanly instead of guessing. |
 | **Openings** | Rectangular, arched, segmental, gable-headed and circular. Stored as records and re-cut on every rebuild, so they heal themselves when the wall moves, lengthens or changes type. |
 | **Justification** | Face A, centre, or face B on the path. |
-| **Takeoff** | Volume, elevational area and an opening schedule per material — measured off the solids that were actually built. CSV out. |
-| **Library** | Wall types are saved inside the `.skp`. Send the model, send the library. |
+| **Framing** | Optional timber or cold-formed steel layers with regional spacing presets, studs, plates, opening frames, gable-raking plates and noggings. Produces a schematic cut list; it is not structural design. |
+| **Takeoff** | Volume, elevational area, framing summary, cutting list and opening schedule — measured from generated geometry and framing members. CSV out. |
+| **Library** | Wall types, including framing choices, are saved inside the `.skp`. Send the model, send the library. |
 | **Native tools** | Move and Rotate a wall with SketchUp's own tools; the transform is folded back into the record instead of breaking the parametric link. |
 
 ## Two decisions worth reading about
@@ -60,7 +62,7 @@ shape for export later rather than a convenient fiction now.
 `src/openwalls/core/` is plain Ruby. No `Sketchup`, no `Geom::`, no `UI.` —
 the build script [refuses to package a release that leaks any of
 them](tools/build). Everything hard lives there: offsetting, mitering, arc
-tessellation, opening profiles, meshing, quantities.
+tessellation, opening profiles, framing plans, meshing and quantities.
 
 `src/openwalls/sketchup/` is the only code that touches the API, and all it
 does is turn meshes into groups and faces and JSON into attributes.
@@ -101,8 +103,7 @@ gable apex, junctions. After that the mesher only ever emits a band or skips
 it. There are no inner loops, no boolean operations, and openings behave
 identically on a curved wall and a straight one.
 
-The test suite then checks the two things that can go wrong, on every
-configuration:
+The test suite checks geometry and the new framing planner as well:
 
 * **watertight** — every boundary edge is cancelled by opposite edges on the
   same line, so the shell has no hole in it;
@@ -110,7 +111,9 @@ configuration:
   mitered band has area exactly `thickness × centreline length`, because the
   triangle gained outside each corner equals the one lost inside. So an L of
   two 300 mm walls, 4 m and 3 m long, must come to `0.3 × 2.7 × 7.0 m³`
-  exactly — a butt joint overshoots and an overlap undershoots.
+  exactly — a butt joint overshoots and an overlap undershoots;
+* **framing plans** — stud/member counts, opening frames, raking plates,
+  cutting-list rows and the watertightness of each generated frame piece.
 
 ```console
 $ ./tools/test
@@ -119,7 +122,7 @@ $ ./tools/test
   ok  WallBuilder: openings                13 tests
   ok  WallBuilder: curves and corners      7 tests
   ...
-  120 tests, 0 failures, 0 errors
+  138 tests, 0 failures, 0 errors
 ```
 
 ## Install
@@ -131,7 +134,7 @@ Or build it yourself:
 
 ```console
 $ tools/build
-  dist/openwalls-0.1.0.rbz  (37 files, 57.3 kB)
+  dist/openwalls-0.1.1.rbz  (39 files, 67.2 kB)
 ```
 
 ## Using it
@@ -144,10 +147,10 @@ $ tools/build
   `1200x2100` to resize before placing.
 * **Wall properties** — the panel edits whatever is selected. On a multiple
   selection only the fields you actually change are applied.
-* **Build-up** — edit the layer stack, see it to scale, save it into the model.
-* **Quantities** — recalculate, then export one CSV per sheet.
+* **Build-up** — edit the layer stack, see it to scale, and save it into the model. Choose a regional framing standard on a structure or sheathing layer to generate individual studs, plates, opening framing and a cutting list.
+* **Quantities** — recalculate, then export one CSV per sheet, including a framing summary and grouped cut list where framing is present.
 
-## Honest limitations in 0.1
+## Honest limitations in 0.1.1
 
 * Thickness is constant along a wall (heights are not).
 * Corners sharper than the miter limit are clamped rather than bevelled; the
@@ -157,8 +160,10 @@ $ tools/build
   and a 100 mm partition, and a plausible-looking guess is worse than a clean
   joint.
 * Three or more walls at one point all butt, for the same reason.
-* No framing, roofs, stairs or LayOut output. The engine is built to grow into
-  them; 0.1 does walls properly instead of everything badly.
+* Framing is a schematic takeoff aid: member spacing and opening details are
+  generated from presets, but loads, connections, lintel sizing and code
+  compliance are not verified. Have a qualified designer check every frame.
+* No roofs, stairs or LayOut output yet; the engine is built to grow into them.
 
 ## Repository
 
@@ -166,7 +171,7 @@ $ tools/build
 src/openwalls/core/        the engine -- pure Ruby, zero SketchUp API
 src/openwalls/sketchup/    the adapter -- the only code that imports SketchUp
 src/openwalls/ui/          HtmlDialog panel
-test/                      120 tests, hand-rolled harness, no gems
+test/                      138 tests, hand-rolled harness, no gems
 tools/bootstrap            fetches a Ruby if the machine has none
 tools/ruby                 native ruby, else CRuby 3.3 on ruby.wasm
 tools/test                 test runner

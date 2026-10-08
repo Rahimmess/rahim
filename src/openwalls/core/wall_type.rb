@@ -24,36 +24,46 @@ module OpenWalls
       # are too thin to model as a solid and are counted by area instead.
       NON_SOLID = %i[cavity membrane].freeze
 
-      attr_reader :name, :kind, :thickness, :material, :structural
+      attr_reader :name, :kind, :thickness, :material, :structural, :framing
 
-      def initialize(name:, thickness:, kind: :structure, material: nil, structural: nil)
+      # +framing+ names a Framing standard. A framed layer is studs and plates
+      # with air between them, not a solid slab; it is measured by its members
+      # and generated separately from the surrounding layer geometry.
+      def initialize(name:, thickness:, kind: :structure, material: nil, structural: nil, framing: nil)
         @name = name.to_s
         @kind = kind.to_sym
         @thickness = thickness.to_f
         @material = material
+        @framing = framing && !framing.to_s.empty? ? framing.to_s : nil
         @structural = structural.nil? ? %i[structure masonry].include?(@kind) : !!structural
 
         raise InvalidRecord, "unknown layer kind #{@kind.inspect}" unless KINDS.include?(@kind)
         raise InvalidRecord, "layer #{@name.inspect} has non-positive thickness" if @thickness <= 0
       end
 
+      def framed?
+        !@framing.nil?
+      end
+
       def solid?
-        !NON_SOLID.include?(@kind)
+        !NON_SOLID.include?(@kind) && !framed?
       end
 
       def cavity?
         @kind == :cavity
       end
 
-      # Membranes are counted by area, solids by volume.
+      # Membranes are counted by area, framed layers by piece, solids by volume.
       def measure
+        return :pieces if framed?
+
         @kind == :membrane ? :area : :volume
       end
 
       def to_h
         {
           'name' => @name, 'kind' => @kind.to_s, 'thickness' => @thickness,
-          'material' => @material, 'structural' => @structural
+          'material' => @material, 'structural' => @structural, 'framing' => @framing
         }
       end
 
@@ -63,7 +73,8 @@ module OpenWalls
           thickness: hash['thickness'],
           kind: (hash['kind'] || 'structure').to_sym,
           material: hash['material'],
-          structural: hash['structural']
+          structural: hash['structural'],
+          framing: hash['framing']
         )
       end
     end
@@ -147,7 +158,37 @@ module OpenWalls
                 Layer.new(name: 'Plasterboard', kind: :finish, thickness: 12.5, material: 'Plasterboard')
               ]),
           new(id: 'concrete-200', name: 'Concrete wall 200', description: 'Fair-faced reinforced concrete',
-              layers: [Layer.new(name: 'Concrete', kind: :structure, thickness: 200, material: 'Concrete C30/37')])
+              layers: [Layer.new(name: 'Concrete', kind: :structure, thickness: 200, material: 'Concrete C30/37')]),
+          new(id: 'timber-frame-140', name: 'Timber frame 140 (UK)',
+              description: 'Studs at 600 mm, sheathed, clad and boarded',
+              layers: [
+                Layer.new(name: 'Cladding', kind: :cladding, thickness: 19, material: 'Timber cladding'),
+                Layer.new(name: 'Cavity', kind: :cavity, thickness: 25),
+                Layer.new(name: 'Sheathing', kind: :sheathing, thickness: 11, material: 'OSB'),
+                Layer.new(name: 'Stud zone 140', kind: :structure, thickness: 140,
+                          material: 'Softwood C16', framing: 'uk-38x140-600'),
+                Layer.new(name: 'Vapour barrier', kind: :membrane, thickness: 0.5, material: 'VCL'),
+                Layer.new(name: 'Plasterboard', kind: :finish, thickness: 12.5, material: 'Plasterboard')
+              ]),
+          new(id: 'timber-frame-2x6', name: 'Timber frame 2x6 (US)',
+              description: 'Studs at 16 in o.c., sheathed and boarded',
+              layers: [
+                Layer.new(name: 'Sheathing', kind: :sheathing, thickness: 11.1, material: 'OSB'),
+                Layer.new(name: 'Stud zone 2x6', kind: :structure, thickness: 139.7,
+                          material: 'SPF No.2', framing: 'us-2x6-16'),
+                Layer.new(name: 'Vapour barrier', kind: :membrane, thickness: 0.5, material: 'VCL'),
+                Layer.new(name: 'Gypsum board', kind: :finish, thickness: 12.7, material: 'Plasterboard')
+              ]),
+          new(id: 'metal-stud-100', name: 'Metal stud 100 (DIN)',
+              description: 'CW100 in UW100 at 625 mm, two boards per face',
+              layers: [
+                Layer.new(name: 'Board outer', kind: :finish, thickness: 12.5, material: 'Plasterboard'),
+                Layer.new(name: 'Board inner', kind: :finish, thickness: 12.5, material: 'Plasterboard'),
+                Layer.new(name: 'CW100 zone', kind: :structure, thickness: 100,
+                          material: 'Galvanised steel', framing: 'din-cw100-625'),
+                Layer.new(name: 'Board inner', kind: :finish, thickness: 12.5, material: 'Plasterboard'),
+                Layer.new(name: 'Board outer', kind: :finish, thickness: 12.5, material: 'Plasterboard')
+              ])
         ]
       end
 

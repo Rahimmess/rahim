@@ -211,6 +211,13 @@ group 'Stations' do
     assert_close 0.0, st.project(v(-800, 0))[0], 1e-9
     assert_close 4000.0, st.project(v(9000, 0))[0], 1e-9
   end
+
+  test 'point_on_rail interpolates at arbitrary arc lengths and clamps at the ends' do
+    st = OW::Stations.build([v(0, 0), v(1000, 0)])
+    assert_equal v(500, 100), st.point_on_rail(100, 500)
+    assert_equal v(0, 100), st.point_on_rail(100, -50)
+    assert_equal v(1000, 100), st.point_on_rail(100, 1050)
+  end
 end
 
 group 'Mesh' do

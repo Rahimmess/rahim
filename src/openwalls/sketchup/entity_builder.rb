@@ -36,8 +36,46 @@ module OpenWalls
           add_mesh(sub.entities, mesh, material)
           tag_layer(sub, layer)
         end
+        add_framing(group, result, materials)
 
         group
+      end
+
+      # Framing is nested once per framed layer and once again per member. This
+      # keeps the wall easy to hide as a group while leaving every cut piece
+      # independently selectable and identifiable in Entity Info.
+      def add_framing(group, result, materials)
+        result.framing.each do |entry|
+          plan = entry[:plan]
+          next unless plan
+
+          frame = group.entities.add_group
+          frame.name = "#{entry[:layer].name} framing"
+          material = material_for(materials, entry[:layer].material || plan.standard.material)
+          Core::Framing.member_meshes(plan, result.record, result.stations).each do |member, member_mesh|
+            next if member_mesh.empty?
+
+            piece = frame.entities.add_group
+            piece.name = "#{member.role.to_s.tr('_', ' ')} #{member.description}"
+            add_mesh(piece.entities, member_mesh, material)
+            stamp(piece, member)
+          end
+          tag_framing(frame)
+        end
+      end
+
+      def stamp(entity, member)
+        entity.set_attribute(Attributes::DICTIONARY, 'member', JSON.generate(member.to_h))
+      rescue StandardError
+        nil
+      end
+
+      def tag_framing(group)
+        model = Sketchup.active_model
+        tag = model.layers['OpenWalls / Framing'] || model.layers.add('OpenWalls / Framing')
+        group.layer = tag
+      rescue StandardError
+        nil
       end
 
       def add_mesh(entities, mesh, material)

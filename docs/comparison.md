@@ -4,9 +4,10 @@ OpenWalls was written as an open alternative to the commercial parametric
 wall extensions for SketchUp, principally **MUZWalls** (Windows and macOS,
 SketchUp 2024+, licensed per seat) and **Medeek Wall** (US stick framing).
 
-This page is meant to be useful rather than flattering. If you need timber
-framing, roofs, stairs or LayOut schedules today, the commercial tools do
-those and OpenWalls does not.
+This page is meant to be useful rather than flattering. OpenWalls now has
+schematic framing layouts and cut lists, but the commercial tools still offer
+more complete engineering workflows, along with roofs, stairs and LayOut
+schedules.
 
 ## Where OpenWalls is genuinely better
 
@@ -14,11 +15,11 @@ those and OpenWalls does not.
 
 Commercial wall tools distinguish a single wall from a double/cavity wall,
 then add finishes, insulation and cladding as separate attachments with their
-own dialogs. OpenWalls has a layer stack and nothing else. A partition is one
-layer; a cavity wall is five; adding insulation is adding a layer. The same
-structure drives geometry, materials, openings, quantities and — when it
-arrives — IFC export, because it is already shaped like
-`IfcMaterialLayerSet`.
+own dialogs. OpenWalls uses a single layer stack: a partition is one layer;
+a cavity wall is five; adding insulation is adding a layer. Framing is a
+property of a selected layer, not another wall mode. The same structure drives
+geometry, materials, openings, quantities and — when it arrives — IFC export,
+because it is already shaped like `IfcMaterialLayerSet`.
 
 ### The engine runs without SketchUp
 
@@ -33,8 +34,8 @@ $ ruby tools/demo.rb
 
 Closed-source extensions cannot be tested this way, which is why their
 geometry bugs are reported by users rather than caught by a suite. OpenWalls
-ships 120 tests that assert **watertightness** and **closed-form volumes** on
-every wall configuration — gables, arches, portholes, curved walls, chained
+ships 138 tests that assert **watertightness**, **closed-form volumes** and
+framing-plan quantities across gables, arches, portholes, curved walls, chained
 corners, closed rooms. Several hold exactly, to 1e-9 relative.
 
 ### Supports four more years of SketchUp
@@ -50,7 +51,7 @@ live inside your `.skp`, not in a vendor account.
 
 ### A smaller, auditable install
 
-The whole extension is about **57 kB**. You can read every line of it. By
+The current extension archive is about **67 kB**. You can read every line of it. By
 comparison, MUZWalls 4.4.0 is distributed as a ~137 MB signed archive whose
 Ruby is protected, so nobody outside the vendor can audit it, fix it, or keep
 it alive.
@@ -66,12 +67,12 @@ above it") that the panel can surface before you commit.
 
 ## Where the commercial tools are ahead
 
-MUZWalls is a mature product with a much broader scope. As of 4.4.0 it has,
-and OpenWalls 0.1 does not:
+MUZWalls is a mature product with a much broader scope. As of 4.4.0 it has
+capabilities OpenWalls 0.1.1 does not provide:
 
-- timber framing (studs, plates, headers, blocking) with US/IRC, Canadian NBC
-  and Australian AS1684 presets;
-- cold-formed steel framing to DIN, EN, AISI and ASTM;
+- structural checks, engineering-grade header sizing, connections and code
+  compliance for timber and cold-formed steel frames;
+- more detailed regional framing rules, bracing and member schedules;
 - reinforced concrete: foundations, columns, beams, slabs, rebar;
 - roofs, dormers, skylights, stairs, floors, railings, lintels;
 - sills, capping and trim that split at openings, with a profile editor;
@@ -85,21 +86,21 @@ and OpenWalls 0.1 does not:
 Medeek Wall remains the better choice for North American stick framing
 specifically.
 
-OpenWalls 0.1 deliberately does walls properly rather than everything badly.
-The architecture — a headless, tested engine with a thin adapter — is chosen
-precisely so that framing, lintels and schedules can be added as engine
-features with closed-form tests, instead of as more code nobody can verify.
+OpenWalls 0.1.1 deliberately expands one step at a time. The architecture —
+a headless, tested engine with a thin adapter — means more advanced framing,
+lintels and schedules can be added as engine features with closed-form tests,
+instead of as more code nobody can verify.
 
 ## Summary
 
-| | OpenWalls 0.1 | Commercial parametric wall extensions |
+| | OpenWalls 0.1.1 | Commercial parametric wall extensions |
 |---|---|---|
 | Licence | MIT, free | per-seat, from ~$15 |
 | Activation | none, fully offline | licence key, online activation |
 | SketchUp | 2021+ | 2024+ |
 | Source | readable, forkable | protected |
-| Testable without SketchUp | yes, 120 tests | no |
-| Install size | ~57 kB | ~137 MB |
-| Wall model | layer stack only | single / double modes plus attachments |
+| Testable without SketchUp | yes, 138 tests | no |
+| Install size | 67.2 kB | ~137 MB |
+| Wall model | layer stack, optional schematic framing | single / double modes plus attachments |
 | Walls, arcs, gables, openings, miters, takeoff | yes | yes |
-| Framing, roofs, stairs, LayOut, PDF import | no | yes |
+| Structural frame design, roofs, stairs, LayOut, PDF import | no | yes |

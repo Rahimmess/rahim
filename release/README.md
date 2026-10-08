@@ -1,6 +1,6 @@
 # Download
 
-**[openwalls-0.1.0.rbz](openwalls-0.1.0.rbz)** — 57 kB
+**[openwalls-0.1.1.rbz](openwalls-0.1.1.rbz)** — 67.2 kB
 
 Install in SketchUp: **Extensions → Extension Manager → Install Extension**,
 then pick the downloaded file.
@@ -13,12 +13,14 @@ This archive is built by [`tools/build`](../tools/build) from
 references the SketchUp API. To rebuild it yourself:
 
 ```console
-$ tools/build
-  dist/openwalls-0.1.0.rbz  (37 files, 57.4 kB)
+$ tools/build --out release
+  release/openwalls-0.1.1.rbz  (39 files, 67.2 kB)
 ```
 
 Verify what you are installing — it is a zip:
 
 ```console
-$ unzip -l release/openwalls-0.1.0.rbz
+$ unzip -l release/openwalls-0.1.1.rbz
 ```
+
+Previous version: [openwalls-0.1.0.rbz](openwalls-0.1.0.rbz).

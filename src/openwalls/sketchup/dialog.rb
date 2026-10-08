@@ -80,6 +80,7 @@ module OpenWalls
         {
           'version' => OpenWalls::VERSION,
           'types' => Library.types.map(&:to_h),
+          'framingStandards' => Core::Framing.standards.map(&:to_h),
           'defaults' => Library.defaults,
           'selection' => selected.map { |group| Attributes.read(group).to_h }.compact,
           'wallCount' => Attributes.all_walls(model).size

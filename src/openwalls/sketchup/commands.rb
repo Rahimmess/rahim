@@ -134,7 +134,7 @@ module OpenWalls
         end
 
         open = results.reject(&:closed?)
-        warnings = results.flat_map { |r| r.record.warnings }
+        warnings = results.flat_map { |result| result.record.warnings + result.framing_warnings }
         skipped = results.flat_map(&:skipped_openings)
 
         lines = ["#{results.size} walls checked."]

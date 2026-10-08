@@ -31,6 +31,13 @@ distance apart and the overall wall measures correctly. They simply produce no
 faces: a 0.5 mm vapour barrier modelled as a solid would be nothing but
 z-fighting and triangle count.
 
+A `structure` or `sheathing` layer can instead name a `framing` standard, such
+as `uk-38x140-600`. That layer still occupies its place in the stack, but the
+builder generates individual studs, plates, opening frames and noggings rather
+than a solid sheet. Framing is reported separately as pieces and in a grouped
+cut list. The included standards are schematic quantity aids, not engineering
+checks; member sizes and connections must be verified for the project.
+
 Each solid layer becomes its own closed solid, its own nested SketchUp group,
 its own SketchUp tag (`OpenWalls / Masonry`, and so on) and its own row in the
 takeoff.
@@ -39,10 +46,13 @@ takeoff.
 
 | Id | Name | Thickness |
 |---|---|---|
-| `partition-100` | Partition 100 | 100 mm |
+| `partition-100` | Partition 100 | 126 mm including plaster |
 | `cavity-300` | Cavity 300 | 365.5 mm |
-| `stud-140` | Timber stud 140 | 165 mm |
+| `stud-140` | Timber stud 140 (solid insulation layer) | 208 mm |
 | `concrete-200` | Concrete 200 | 200 mm |
+| `timber-frame-140` | Timber frame 140 (UK) | 208 mm |
+| `timber-frame-2x6` | Timber frame 2x6 (US) | 164 mm |
+| `metal-stud-100` | Metal stud 100 (DIN) | 150 mm |
 
 Presets are a starting point, not a constraint. Edit a stack in the Build-up
 tab and save it; it is stored in the `.skp`, travels with the file, and

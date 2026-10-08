@@ -82,7 +82,23 @@ group 'Takeoff' do
 
   test 'every sheet is produced, even when empty' do
     sheets = OWT::Takeoff.sheets([OWT.build(straight_wall)])
-    assert_equal ['Walls', 'Materials', 'Layers', 'Openings', 'Opening types', 'Finish areas'], sheets.keys
+    assert_equal ['Walls', 'Materials', 'Layers', 'Framing', 'Cutting list',
+                  'Openings', 'Opening types', 'Finish areas'], sheets.keys
+  end
+
+  test 'framing summary and cutting list use the planned members' do
+    frame = OWT::Layer.new(name: 'Stud zone', kind: :structure, thickness: 140,
+                           material: 'Softwood C16', framing: 'uk-38x140-600')
+    type = OWT::WallType.new(id: 'framed', name: 'Framed', layers: [frame])
+    result = OWT.build(straight_wall(length: 3600, height: 2400, type: type))
+    summary = OWT::Takeoff.framing_sheet([result]).first
+    cutlist = OWT::Takeoff.cutting_list_sheet([result])
+
+    assert_equal 'UK 38x140 @ 600 mm', summary['Standard']
+    assert_equal 7, summary['Studs']
+    assert_equal 7, summary['Pieces'] - summary['Noggings'] - summary['Plates']
+    assert cutlist.any? { |row| row['Role'] == 'stud' && row['Count'] == 7 }
+    assert cutlist.all? { |row| row['Material'] == 'Softwood C16' }
   end
 end
 

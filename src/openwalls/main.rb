@@ -26,17 +26,6 @@ require_relative 'sketchup/dialog'
 require_relative 'sketchup/commands'
 require_relative 'sketchup/observers'
 
-module OpenWalls
-  def self.boot
-    if Sketchup.version.to_i < MINIMUM_SKETCHUP
-      UI.messagebox("OpenWalls needs SketchUp #{2000 + MINIMUM_SKETCHUP} or newer.")
-      return false
-    end
+require_relative 'startup'
 
-    SketchUpAdapter::Commands.install
-    SketchUpAdapter::Observers.install
-    true
-  end
-
-  boot
-end
+OpenWalls.boot

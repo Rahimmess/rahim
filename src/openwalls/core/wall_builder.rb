@@ -31,13 +31,29 @@ module OpenWalls
       # so callers can place components, dimensions or labels without
       # recomputing anything.
       class Result
-        attr_reader :record, :stations, :layers, :skipped_openings
+        attr_reader :record, :stations, :layers, :skipped_openings, :framing
 
-        def initialize(record, stations, layers, skipped_openings)
+        def initialize(record, stations, layers, skipped_openings, framing = [])
           @record = record
           @stations = stations
           @layers = layers
           @skipped_openings = skipped_openings
+          @framing = framing
+        end
+
+        def framed?
+          !@framing.empty?
+        end
+
+        # Every framing member across the framed layers on this wall.
+        def members
+          @framing.flat_map { |entry| entry[:plan] ? entry[:plan].members : [] }
+        end
+
+        def framing_warnings
+          @framing.flat_map do |entry|
+            entry[:error] ? [entry[:error]] : entry[:plan].warnings
+          end
         end
 
         # [{ layer:, mesh: }] for every layer that produced geometry.
@@ -46,7 +62,17 @@ module OpenWalls
         end
 
         def mesh
-          @mesh ||= @layers.each_with_object(Mesh.new) { |entry, m| m.merge(entry[:mesh]) }
+          @mesh ||= begin
+            combined = @layers.each_with_object(Mesh.new) { |entry, out| out.merge(entry[:mesh]) }
+            @framing.each { |entry| combined.merge(entry[:mesh]) }
+            combined
+          end
+        end
+
+        # Framing is measured by its individual cut members, not as a slab in
+        # the wall's net volume column.
+        def framing_volume
+          @framing.sum { |entry| entry[:plan] ? entry[:plan].volume : 0.0 }
         end
 
         def volume
@@ -56,11 +82,14 @@ module OpenWalls
         # Watertight rather than strictly manifold: see Mesh#open_boundary for
         # why the minimum-face output legitimately contains T-vertices.
         def closed?
-          @layers.all? { |entry| entry[:mesh].watertight? }
+          @layers.all? { |entry| entry[:mesh].watertight? } &&
+            @framing.all? { |entry| entry[:mesh].watertight? }
         end
 
         def open_layers
-          @layers.reject { |entry| entry[:mesh].watertight? }.map { |entry| entry[:layer].name }
+          solid = @layers.reject { |entry| entry[:mesh].watertight? }.map { |entry| entry[:layer].name }
+          frames = @framing.reject { |entry| entry[:mesh].watertight? }.map { |entry| entry[:layer].name }
+          solid + frames
         end
       end
 
@@ -83,13 +112,27 @@ module OpenWalls
         skipped = @record.openings - openings
 
         layers = []
+        framing = []
         @record.type.layer_spans.each do |layer, near, far|
+          if layer.framed?
+            framing << build_framing(stations, layer)
+            next
+          end
           next unless layer.solid?
 
           mesh = build_layer(stations, layer, near, far, openings)
           layers << { layer: layer, near: near, far: far, mesh: mesh } unless mesh.empty?
         end
-        Result.new(@record, stations, layers, skipped)
+        Result.new(@record, stations, layers, skipped, framing.compact)
+      end
+
+      # A framing failure is a wall warning, not a reason to lose otherwise
+      # usable cladding, sheathing or board layers.
+      def build_framing(stations, layer)
+        plan = Framing.plan(@record, layer)
+        { layer: layer, plan: plan, mesh: Framing.mesh(plan, @record, stations) }
+      rescue Error => e
+        { layer: layer, plan: nil, mesh: Mesh.new, error: e.message }
       end
 
       # Arc lengths that must become stations: every opening edge, enough

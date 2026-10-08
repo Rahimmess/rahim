@@ -130,6 +130,7 @@ def main():
 
     totals = [0, 0, 0]
     crashed = []
+    runner_errors = []
     print()
     for stem, group, tests in groups:
         code, output, split = run_shard(shard_entry(stem), group, tests)
@@ -142,7 +143,15 @@ def main():
         totals = [a + b for a, b in zip(totals, counts)]
         note = f"{DIM} (one process per test){OFF}" if split else ""
 
-        if counts[1] or counts[2]:
+        if counts[0] == 0 or (code != 0 and counts[1] == 0 and counts[2] == 0):
+            runner_errors.append(group)
+            detail = f"runner exited with status {code} and reported no test results"
+            if counts[0] > 0:
+                detail = f"runner exited with status {code} despite reporting no test failures"
+            print(f"{RED}  FAIL{OFF} {group:<36} {detail}")
+            for line in output.splitlines()[-8:]:
+                print("       " + line.strip())
+        elif counts[1] or counts[2]:
             print(f"{RED}  FAIL{OFF} {group:<36} "
                   f"{counts[0]} tests, {counts[1]} failures, {counts[2]} errors")
             show = False
@@ -160,12 +169,14 @@ def main():
     line = f"  {totals[0]} tests, {totals[1]} failures, {totals[2]} errors"
     if crashed:
         line += f", {len(crashed)} crashed shard(s)"
+    if runner_errors:
+        line += f", {len(runner_errors)} runner error(s)"
     print(line + "\n")
     try:
         os.remove(os.path.join(ROOT, "test", ".shard.rb"))
     except OSError:
         pass
-    return 0 if not (totals[1] or totals[2] or crashed) else 1
+    return 0 if not (totals[1] or totals[2] or crashed or runner_errors) else 1
 
 
 if __name__ == "__main__":

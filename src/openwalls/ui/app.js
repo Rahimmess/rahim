@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  var state = { types: [], defaults: {}, selection: [], wallCount: 0 };
+  var state = { types: [], framingStandards: [], defaults: {}, selection: [], wallCount: 0 };
   var editingType = null;
 
   var bridge = (typeof window.sketchup === 'object' && window.sketchup) || null;
@@ -170,6 +170,7 @@
   /* ------------------------------------------------------------- build-up */
 
   var LAYER_KINDS = ['structure', 'masonry', 'insulation', 'cavity', 'membrane', 'finish', 'cladding', 'sheathing'];
+  var FRAMEABLE_KINDS = ['structure', 'sheathing'];
 
   var KIND_COLOURS = {
     structure: '#a0a09e', masonry: '#96543f', insulation: '#e2c678', cavity: '#2b303a',
@@ -210,8 +211,13 @@
       var share = total ? (Number(layer.thickness) / total) * 100 : 0;
       var cell = el('div', { text: share > 9 ? Math.round(layer.thickness) : '' });
       cell.style.width = share + '%';
-      cell.style.background = KIND_COLOURS[layer.kind] || '#999';
-      cell.title = layer.name + ' -- ' + layer.kind + ' -- ' + mm(layer.thickness);
+      if (layer.framing) {
+        cell.style.background = 'repeating-linear-gradient(90deg, #c08a4a 0 6px, #2b303a 6px 10px)';
+        cell.title = layer.name + ' -- framed with ' + layer.framing + ' -- ' + mm(layer.thickness);
+      } else {
+        cell.style.background = KIND_COLOURS[layer.kind] || '#999';
+        cell.title = layer.name + ' -- ' + layer.kind + ' -- ' + mm(layer.thickness);
+      }
       stack.appendChild(cell);
     });
 
@@ -227,15 +233,32 @@
         kind.appendChild(option);
       });
       var material = el('input', { type: 'text', value: layer.material || '', placeholder: 'material' });
+      var framing = el('select', { title: 'Generate framing members instead of a solid layer' });
+      framing.appendChild(el('option', { value: '', text: 'solid' }));
+      (state.framingStandards || []).forEach(function (standard) {
+        var option = el('option', { value: standard.id, text: standard.name });
+        if (standard.id === layer.framing) { option.selected = true; }
+        framing.appendChild(option);
+      });
+      framing.disabled = FRAMEABLE_KINDS.indexOf(layer.kind) === -1;
+      if (framing.disabled) {
+        framing.value = '';
+        layer.framing = null;
+      }
       var kill = el('button', { class: 'kill', text: '\u00d7' });
 
       name.addEventListener('input', function () { layer.name = name.value; });
       thickness.addEventListener('input', function () { layer.thickness = parseFloat(thickness.value) || 0; renderType(); });
-      kind.addEventListener('change', function () { layer.kind = kind.value; renderType(); });
+      kind.addEventListener('change', function () {
+        layer.kind = kind.value;
+        if (FRAMEABLE_KINDS.indexOf(layer.kind) === -1) { layer.framing = null; }
+        renderType();
+      });
       material.addEventListener('input', function () { layer.material = material.value; });
+      framing.addEventListener('change', function () { layer.framing = framing.value || null; renderType(); });
       kill.addEventListener('click', function () { editingType.layers.splice(index, 1); renderType(); });
 
-      host.appendChild(el('div', { class: 'row' }, [name, thickness, kind, material, kill]));
+      host.appendChild(el('div', { class: 'row' }, [name, thickness, kind, material, framing, kill]));
     });
   }
 

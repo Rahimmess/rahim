@@ -22,6 +22,8 @@ module OpenWalls
           'Walls' => walls_sheet(results),
           'Materials' => materials_sheet(results),
           'Layers' => layers_sheet(results),
+          'Framing' => framing_sheet(results),
+          'Cutting list' => cutting_list_sheet(results),
           'Openings' => openings_sheet(results),
           'Opening types' => opening_types_sheet(results),
           'Finish areas' => finish_areas_sheet(results)
@@ -41,6 +43,8 @@ module OpenWalls
             'Height end (mm)' => r3(rec.height_end),
             'Base (mm)' => r3(rec.base_z),
             'Net volume (m3)' => r3(Units.mm3_to_m3(res.volume)),
+            'Framing pieces' => res.members.size,
+            'Framing volume (m3)' => r3(Units.mm3_to_m3(res.framing_volume)),
             'Openings' => rec.openings.size
           }
         end
@@ -93,6 +97,56 @@ module OpenWalls
           end
         end
         rows
+      end
+
+      # One summary line per framed wall layer, including any warnings that
+      # require human review (for example an oversized header span).
+      def framing_sheet(results)
+        rows = []
+        results.each do |res|
+          res.framing.each do |entry|
+            plan = entry[:plan]
+            rows << {
+              'Wall' => res.record.name,
+              'Layer' => entry[:layer].name,
+              'Standard' => plan ? plan.standard.name : entry[:layer].framing,
+              'Spacing (mm)' => plan ? r3(plan.standard.spacing) : nil,
+              'Studs' => plan ? plan.count(:stud) + plan.count(:king_stud) + plan.count(:jack_stud) : 0,
+              'Cripples' => plan ? plan.count(:cripple) : 0,
+              'Headers' => plan ? plan.count(:header) : 0,
+              'Sills' => plan ? plan.count(:sill) : 0,
+              'Plates' => plan ? plan.count(:sole_plate) + plan.count(:top_plate) : 0,
+              'Noggings' => plan ? plan.count(:nogging) : 0,
+              'Pieces' => plan ? plan.count : 0,
+              'Volume (m3)' => plan ? r3(Units.mm3_to_m3(plan.volume)) : 0.0,
+              'Warnings' => entry[:error] || (plan && plan.warnings.join('; '))
+            }
+          end
+        end
+        rows
+      end
+
+      # Aggregate framing into a merchant-ready cut list. Material is part of
+      # the key so steel and timber with the same nominal section never merge.
+      def cutting_list_sheet(results)
+        counts = Hash.new(0)
+        results.each do |res|
+          res.framing.each do |entry|
+            next unless entry[:plan]
+
+            entry[:plan].cutting_list.each do |row|
+              key = [row['Section'], row['Role'], row['Material'], row['Length (mm)']]
+              counts[key] += row['Count']
+            end
+          end
+        end
+        counts.map do |(section, role, material, length), count|
+          {
+            'Section' => section, 'Role' => role, 'Material' => material,
+            'Length (mm)' => length, 'Count' => count,
+            'Total length (m)' => r3(Units.mm_to_m(length * count))
+          }
+        end.sort_by { |row| [row['Section'], -row['Length (mm)'], row['Role']] }
       end
 
       def openings_sheet(results)
